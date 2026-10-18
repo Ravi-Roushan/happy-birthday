@@ -1,14 +1,11 @@
 ISHITA'S BIRTHDAY SURPRISE WEBSITE 💗
 
-A cinematic, mobile-responsive birthday site with a friendship-to-love mini-movie.
+Features:
+- Opening birthday curtain with ribbon/bow; tap to untie and slide the ribbon down to reveal the site.
+- Nine optimized photos in a responsive gallery.
+- Interactive friendship-to-love mini movie with animated scenes.
+- Floating hearts, smooth reveals, animated cake and final surprise message.
+- Built-in original romantic instrumental melody and birthday melody using Web Audio. Tap the ♡ or 🎂 music buttons to start; browser autoplay is intentionally not forced. Tap pause to stop.
 
-FEATURES
-- 9 optimized personal photos
-- Interactive 4-scene friendship-to-love animated mini-movie
-- Illustrated characters, floating heart, moon glow, twinkling stars and scene transitions
-- Smooth scroll reveals and floating hearts
-- Animated birthday cake and final surprise message
-- Mobile-responsive static HTML/CSS/JavaScript site
-
-PREVIEW: Open index.html in Chrome.
-DEPLOY: Upload this folder to GitHub and import it into Vercel. No build command needed.
+Preview: open index.html in Chrome.
+Deploy: push the folder to GitHub and import it into Vercel as a static site; no build command is needed.
