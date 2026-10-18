@@ -16,3 +16,109 @@ const storyScenes=[
 {label:"SCENE 03 · SOMETHING CHANGED",caption:"And somewhere between friendship and all those little moments, you started to mean a little more than words could say."},
 {label:"SCENE 04 · MY FAVOURITE STORY",caption:"If I could choose a beginning again, I would still choose the friendship that brought me to you. Happy birthday, Ishita. ♡"}
 ];let currentScene=0;function setStoryScene(index){const frame=document.getElementById("cinemaFrame");if(!frame)return;currentScene=(index+storyScenes.length)%storyScenes.length;const scene=storyScenes[currentScene];document.getElementById("sceneLabel").textContent=scene.label;document.getElementById("sceneCaption").textContent=scene.caption;document.getElementById("sceneNumber").textContent=String(currentScene+1).padStart(2,"0");document.getElementById("filmProgress").style.width=((currentScene+1)/storyScenes.length*100)+"%";frame.classList.remove("scene-1","scene-2","scene-3","scene-change");if(currentScene>0)frame.classList.add("scene-"+currentScene);void frame.offsetWidth;frame.classList.add("scene-change");document.querySelectorAll(".chapter").forEach((btn,i)=>btn.classList.toggle("active",i===currentScene));}const nextSceneButton=document.getElementById("nextScene");if(nextSceneButton)nextSceneButton.addEventListener("click",()=>setStoryScene(currentScene+1));document.querySelectorAll(".chapter").forEach(btn=>btn.addEventListener("click",()=>setStoryScene(Number(btn.dataset.scene))));
+
+
+// Birthday music: original romantic instrumental + a simple Happy Birthday melody.
+// Audio starts only after the visitor taps a music control (browser autoplay policy).
+const curtain = document.getElementById('birthdayCurtain');
+const unwrapBtn = document.getElementById('unwrapBtn');
+const ribbonHandle = document.getElementById('ribbonHandle');
+const ribbonBand = document.querySelector('.ribbon-band');
+document.body.classList.add('locked');
+let curtainOpened=false, dragStartY=0, dragBase=0, dragPointer=null;
+function openBirthdayCurtain(){
+  if(curtainOpened)return; curtainOpened=true;
+  // Start the Happy Birthday melody inside the same user gesture (tap or completed swipe).
+  startMusic('birthday');
+  curtain.classList.remove('dragging');
+  curtain.classList.add('opening');
+  document.body.classList.remove('locked');
+  showToast('Happy Birthday, Ishita! ♡');
+  setTimeout(()=>{curtain?.remove();document.getElementById('home')?.scrollIntoView({behavior:'smooth'});},1350);
+}
+if(unwrapBtn)unwrapBtn.addEventListener('click',openBirthdayCurtain);
+if(ribbonHandle){
+  ribbonHandle.addEventListener('pointerdown',e=>{
+    if(curtainOpened)return;dragPointer=e.pointerId;dragStartY=e.clientY;dragBase=0;
+    curtain.classList.add('dragging');ribbonHandle.setPointerCapture?.(e.pointerId);e.preventDefault();
+  });
+  ribbonHandle.addEventListener('pointermove',e=>{
+    if(dragPointer!==e.pointerId||curtainOpened)return;
+    const delta=Math.max(0,Math.min(window.innerHeight*.62,e.clientY-dragStartY));
+    const percent=delta/window.innerHeight*100;
+    if(ribbonBand)ribbonBand.style.top=`calc(49% + ${delta}px)`;
+    ribbonHandle.style.top=`calc(49% - 38px + ${delta}px)`;
+    // Pulling the ribbon far enough opens the gift; also works with a quick swipe.
+    if(delta>window.innerHeight*.24){dragPointer=null;openBirthdayCurtain();}
+    e.preventDefault();
+  });
+  const releaseRibbon=e=>{
+    if(dragPointer!==e.pointerId)return;dragPointer=null;
+    if(curtainOpened)return;
+    curtain.classList.remove('dragging');
+    if(ribbonBand)ribbonBand.style.top='49%';ribbonHandle.style.top='calc(49% - 38px)';
+  };
+  ribbonHandle.addEventListener('pointerup',releaseRibbon);
+  ribbonHandle.addEventListener('pointercancel',releaseRibbon);
+  ribbonHandle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBirthdayCurtain();}});
+}
+let audioCtx=null, musicTimer=null, musicIndex=0, musicKind=null, musicNodes=[];
+const musicDock=document.getElementById('musicDock');
+const musicTitle=document.getElementById('musicTitle');
+const musicStatus=document.getElementById('musicStatus');
+const noteIcon=document.getElementById('musicNoteIcon');
+const romanticNotes=[
+  [261.63,329.63,392.00,523.25],[293.66,369.99,440.00,587.33],
+  [246.94,329.63,392.00,493.88],[220.00,293.66,349.23,440.00],
+  [261.63,329.63,392.00,523.25],[196.00,261.63,329.63,392.00]
+];
+const birthdayNotes=[
+  [392,392,440,392,523.25,493.88],
+  [392,392,440,392,587.33,523.25],
+  [392,392,783.99,659.25,523.25,493.88,440],
+  [698.46,698.46,659.25,523.25,587.33,523.25]
+];
+function tone(freq,when,duration,kind='sine',volume=.055){
+  if(!audioCtx)return;
+  const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+  osc.type=kind;osc.frequency.setValueAtTime(freq,when);
+  gain.gain.setValueAtTime(.0001,when);gain.gain.exponentialRampToValueAtTime(volume,when+.035);gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
+  osc.connect(gain);gain.connect(audioCtx.destination);osc.start(when);osc.stop(when+duration+.05);musicNodes.push(osc);
+}
+function playStep(){
+  if(!audioCtx||!musicKind)return;
+  const now=audioCtx.currentTime+.03;
+  if(musicKind==='romantic'){
+    const chord=romanticNotes[musicIndex%romanticNotes.length];
+    chord.forEach((n,i)=>tone(n,now+i*.09,1.45,'sine',i===0?.027:.018));
+    tone(chord[0]/2,now,.95,'triangle',.035);
+    musicIndex++;
+  }else{
+    const flat=birthdayNotes.flat();
+    const n=flat[musicIndex%flat.length];
+    const long=[4,10,17,23].includes(musicIndex%flat.length)? .62:.34;
+    tone(n,now,long,'triangle',.065);
+    tone(n*2,now,.18,'sine',.012);
+    musicIndex++;
+  }
+  if(musicIndex%8===0){
+    const scenes=document.querySelectorAll('.chapter');
+    if(scenes.length){const active=[...scenes].findIndex(x=>x.classList.contains('active'));setStoryScene((active+1+4)%4);}
+  }
+}
+function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null;}musicKind=null;musicDock.classList.remove('playing');musicStatus.textContent='Paused — choose a track';document.querySelectorAll('.music-actions button').forEach(b=>b.classList.remove('active'));noteIcon.textContent='♫';}
+async function startMusic(kind){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC){musicStatus.textContent='Audio not supported in this browser';return;}
+    if(!audioCtx)audioCtx=new AC();if(audioCtx.state==='suspended')await audioCtx.resume();
+    if(musicTimer)clearInterval(musicTimer);musicKind=kind;musicIndex=0;
+    musicTitle.textContent=kind==='romantic'?'A melody for you':'Happy Birthday, Ishita!';
+    musicStatus.textContent=kind==='romantic'?'Soft romantic instrumental':'Birthday melody playing';
+    musicDock.classList.add('playing');document.querySelectorAll('.music-actions button').forEach(b=>b.classList.remove('active'));
+    document.getElementById(kind==='romantic'?'romanticTrack':'birthdayTrack').classList.add('active');noteIcon.textContent=kind==='romantic'?'♫':'♪';
+    playStep();musicTimer=setInterval(playStep,kind==='romantic'?1250:420);
+  }catch(e){musicStatus.textContent='Tap again to enable audio';}
+}
+document.getElementById('romanticTrack')?.addEventListener('click',()=>startMusic('romantic'));
+document.getElementById('birthdayTrack')?.addEventListener('click',()=>startMusic('birthday'));
+document.getElementById('musicStop')?.addEventListener('click',stopMusic);
